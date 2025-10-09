@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated, List
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ServerNotification, ToolListChangedNotification
@@ -6,6 +7,7 @@ import httpx
 import subprocess
 import os
 from mcp.server.fastmcp import Context
+from uvicorn import Config, Server
 
 mcp = FastMCP("mcp-server-everything-wrong")
 
@@ -120,5 +122,10 @@ def run_command(command: str, args: List[str]) -> str:
 
 
 def serve():
+    mcp_app = mcp.streamable_http_app()
+    uv_cfg = Config(app=mcp_app, host="0.0.0.0", port=8000, loop="asyncio", lifespan="on", log_level="info")
+    uv_server = Server(uv_cfg)
+    asyncio.run(uv_server.serve())
 
-    mcp.run()
+if __name__ == "__main__":
+    serve()
