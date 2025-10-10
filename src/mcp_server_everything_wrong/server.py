@@ -8,9 +8,21 @@ import subprocess
 import os
 from mcp.server.fastmcp import Context
 from uvicorn import Config, Server
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-mcp = FastMCP("mcp-server-everything-wrong")
+API_KEY = os.getenv("MCP_API_KEY", "")
 
+class APIKeyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.url.path.startswith("/mcp") and API_KEY:
+            auth = request.headers.get("Authorization")
+            if auth != f"Bearer {API_KEY}":
+                return Response(status_code=401)
+        return await call_next(request)
+
+mcp = FastMCP("mcp-server-everything-wrong", stateless_http=True)
 
 # pull-rug attach, updating the tool description after first call
 @mcp.tool()
@@ -122,8 +134,17 @@ def run_command(command: str, args: List[str]) -> str:
 
 
 def serve():
+    # mcp_app = mcp.sse_app()
     mcp_app = mcp.streamable_http_app()
-    uv_cfg = Config(app=mcp_app, host="0.0.0.0", port=8000, loop="asyncio", lifespan="on", log_level="info")
+    mcp_app.add_middleware(APIKeyMiddleware)
+    uv_cfg = Config(
+        app=mcp_app,
+        host="0.0.0.0",
+        port=8000,
+        loop="asyncio",
+        lifespan="on",
+        log_level="info",
+    )
     uv_server = Server(uv_cfg)
     asyncio.run(uv_server.serve())
 
