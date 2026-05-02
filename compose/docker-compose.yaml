@@ -17,7 +17,7 @@ services:
 
   mcp-server-everything-wrong:
     build: ..
-    # image: ghcr.io/double16/mcp-server-everything-wrong:latest
+    # image: ghcr.io/double16/mcp-server-everything-wrong:main
     labels:
       - type=mcp-server
     environment:
