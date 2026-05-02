@@ -1,3 +1,0 @@
-httpx
-mcp[cli]>=1.9.0
-pydantic

@@ -16,7 +16,8 @@ services:
         target: /data
 
   mcp-server-everything-wrong:
-    image: acuvity/mcp-server-everything-wrong:latest
+    build: ..
+    # image: ghcr.io/double16/mcp-server-everything-wrong:latest
     labels:
       - type=mcp-server
     environment:
@@ -25,10 +26,10 @@ services:
       #- MINIBRIDGE_SBOM=/disable
       # uncomment this one to show tool poisoining prevention
       - GUARDRAILS=sensitive-pattern-detection secrets-redaction
-    # covert-instruction-detection
-    # sensitive-pattern-detection
-    # shadowing-pattern-detection
-    # schema-misuse-prevention
-    # cross-origin-tool-access
-    # secrets-redaction
+      # covert-instruction-detection
+      # sensitive-pattern-detection
+      # shadowing-pattern-detection
+      # schema-misuse-prevention
+      # cross-origin-tool-access
+      # secrets-redaction
     restart: always
