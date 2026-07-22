@@ -56,6 +56,40 @@ You can also run the server in a "streamable-HTTP" mode, which is useful for rem
 
    Configure your MCP client to use the HTTP endpoint. If you set `MCP_API_KEY`, ensure your client sends the `Authorization: your-secret-key` or `Authorization: Bearer your-secret-key` header.
 
+### Deploying as an AWS Lambda
+
+The Lambda entry point is a thin adapter around the same streamable-HTTP MCP application used by the stand-alone server.
+
+1. Build a Lambda deployment package or container image containing this project and its dependencies.
+
+   For example, create an x86_64-compatible deployment package with the AWS SAM build image:
+
+   ```console
+   docker run --rm --platform linux/amd64 -v "$PWD:/src" -w /src public.ecr.aws/sam/build-python3.14 /bin/sh -c 'pip install . --target /tmp/package && cd /tmp/package && zip -r /src/lambda-deployment.zip .'
+   ```
+
+2. Set the function handler to:
+
+   ```text
+   mcp_server_everything_wrong.aws_lambda.lambda_handler
+   ```
+
+3. Set `MCP_API_KEY` in the Lambda function's environment variables.
+4. Expose the function through an API Gateway HTTP API or Lambda Function URL and send MCP requests to its `/mcp` path.
+5. Call the `greet` tool through the exposed endpoint:
+
+   ```console
+   FUNCTION_URL="https://example.lambda-url.us-east-1.on.aws"
+   MCP_API_KEY=...
+   curl --request POST "${FUNCTION_URL}/mcp" \
+     --header "Authorization: Bearer ${MCP_API_KEY}" \
+     --header "Content-Type: application/json" \
+     --header "Accept: application/json, text/event-stream" \
+     --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"greet","arguments":{}}}'
+   ```
+
+Requests to `/mcp` must provide the configured key as either `Authorization: your-secret-key` or `Authorization: Bearer your-secret-key`. The API key is read from the environment for each request, so updated Lambda environment configuration is honored without changing the MCP implementation.
+
 ---
 
 ## Available Tools

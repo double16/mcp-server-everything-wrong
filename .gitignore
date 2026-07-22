@@ -12,3 +12,5 @@ compose/data/local.db
 
 # dev files
 .idea
+
+*.zip
