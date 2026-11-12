@@ -50,7 +50,23 @@ You can also run the server in a "streamable-HTTP" mode, which is useful for rem
    uv run mcp-server-everything-wrong
    ```
 
-   The server will start on `http://0.0.0.0:8000`.
+   The server starts on `http://0.0.0.0:8000` by default. If both `cert.pem`
+   and `key.pem` are readable regular files in the current working directory,
+   it serves HTTPS on the same port instead, with MCP at `/mcp`. Missing or
+   unreadable files leave HTTP enabled. Invalid certificates or mismatched keys
+   fail TLS startup. Restart the server after replacing certificates.
+
+   For Compose HTTPS, place both files in `compose/`, then run:
+
+   ```console
+   cd compose
+   docker compose -f docker-compose.yaml -f docker-compose.tls.yaml up -d
+   ```
+
+   The optional override mounts each file read-only into `/app`, the container's
+   working directory. Both host files must exist. Default Compose startup needs
+   neither file. Configure clients to use HTTPS and trust the issuing certificate.
+   Lambda TLS continues to be handled by AWS.
 
 3. **Connect via HTTP:**
 

@@ -15,6 +15,7 @@
 
 import asyncio
 import hmac
+from pathlib import Path
 from argparse import ArgumentParser
 from typing import Annotated, List
 from mcp.server.fastmcp import FastMCP
@@ -265,10 +266,24 @@ async def serve():
     argp.add_argument("--port", type=int, default=8000)
     argp.add_argument("--host", type=str, default="0.0.0.0")
     args = argp.parse_args()
+    tls_files = (Path.cwd() / "cert.pem", Path.cwd() / "key.pem")
+    tls_available = True
+    try:
+        for path in tls_files:
+            if not path.is_file():
+                tls_available = False
+                break
+            with path.open("rb"):
+                pass
+    except OSError:
+        tls_available = False
+
     uv_cfg = Config(
         app=create_app(),
         host=args.host,
         port=args.port,
+        ssl_certfile=str(tls_files[0]) if tls_available else None,
+        ssl_keyfile=str(tls_files[1]) if tls_available else None,
         loop="asyncio",
         lifespan="on",
         log_level="info",

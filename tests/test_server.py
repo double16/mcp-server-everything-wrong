@@ -14,6 +14,8 @@
 
 import os
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import AsyncMock, patch
 
 from starlette.requests import Request
@@ -81,16 +83,46 @@ class APIKeyMiddlewareTest(unittest.IsolatedAsyncioTestCase):
 
 
 class StandaloneServerTest(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        argv_patch = patch("sys.argv", ["mcp-server-everything-wrong"])
+        argv_patch.start()
+        self.addCleanup(argv_patch.stop)
+
     @patch("mcp_server_everything_wrong.server.Server")
     async def test_serve_runs_shared_asgi_application(self, server_class):
         server_class.return_value.serve = AsyncMock()
 
-        await serve()
+        with TemporaryDirectory() as directory, patch.object(Path, "cwd", return_value=Path(directory)):
+            await serve()
 
         config = server_class.call_args.args[0]
         self.assertEqual("0.0.0.0", config.host)
         self.assertEqual(8000, config.port)
         server_class.return_value.serve.assert_awaited_once_with()
+
+    @patch("mcp_server_everything_wrong.server.Server")
+    async def test_tls_detection(self, server_class):
+        server_class.return_value.serve = AsyncMock()
+        for scenario in ("both", "neither", "cert_only", "key_only", "directory", "unreadable"):
+            with self.subTest(scenario=scenario), TemporaryDirectory() as directory:
+                root = Path(directory)
+                if scenario != "neither":
+                    if scenario != "key_only":
+                        (root / "cert.pem").write_text("certificate")
+                    if scenario != "cert_only":
+                        if scenario == "directory":
+                            (root / "key.pem").mkdir()
+                        else:
+                            (root / "key.pem").write_text("key")
+                with patch.object(Path, "cwd", return_value=root):
+                    if scenario == "unreadable":
+                        with patch.object(Path, "open", side_effect=PermissionError):
+                            await serve()
+                    else:
+                        await serve()
+                config = server_class.call_args.args[0]
+                self.assertEqual(str(root / "cert.pem") if scenario == "both" else None, config.ssl_certfile)
+                self.assertEqual(str(root / "key.pem") if scenario == "both" else None, config.ssl_keyfile)
 
 
 if __name__ == "__main__":

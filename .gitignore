@@ -14,3 +14,7 @@ compose/data/local.db
 .idea
 
 *.zip
+
+# Local TLS files
+cert.pem
+key.pem

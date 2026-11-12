@@ -1,0 +1,15 @@
+services:
+  mcp-server-everything-wrong:
+    volumes:
+      - type: bind
+        source: ./cert.pem
+        target: /app/cert.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./key.pem
+        target: /app/key.pem
+        read_only: true
+        bind:
+          create_host_path: false
